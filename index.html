@@ -51,8 +51,9 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 
 .gates { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; color: var(--muted); }
 .gates li { display: inline-flex; align-items: center; gap: 6px; }
 .records { display: flex; gap: 14px; flex-wrap: wrap; }
-.rec { border-collapse: collapse; font-size: 13.5px; background: var(--bg); border-radius: 8px; overflow: hidden; }
+.rec { border-collapse: collapse; font-size: 13.5px; background: var(--bg); border-radius: 8px; overflow: hidden; position: relative; }   /* relative: the hidden caption stays inside its card (phones scroll the cards sideways) */
 .rec caption { caption-side: top; text-align: left; font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 0 6px; }
+.rec thead th.win { text-align: left; text-transform: none; letter-spacing: .01em; font-family: var(--font-display); font-weight: 600; font-size: 13px; color: var(--ink); white-space: normal; }
 .rec th, .rec td { padding: 4px 10px; text-align: right; white-space: nowrap; }
 .rec thead th { font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--rule); }
 .rec tbody th { text-align: left; font-weight: 500; color: var(--muted); }
@@ -314,7 +315,9 @@ table.rtg { border-collapse: collapse; width: 100%; font-size: 14px; }
     const suRow = mk.some((r) => r.su) ? '<tr><th scope="row"><abbr title="Straight up: how often the model’s side and the Vegas favorite won the game outright, on the same games (pick’em lines left out)">SU Model / Vegas</abbr></th>' +
       mk.map((r) => '<td>' + (r.su ? '<span title="' + r.su.n + ' games">' + r.su.model.toFixed(1) + '% / ' + r.su.line.toFixed(1) + '%</span>' : '') + '</td>').join('') + '</tr>' : '';
     const mae = maeRow || suRow ? '<tfoot>' + maeRow + suRow + '</tfoot>' : '';
-    return '<table class="rec"><caption>' + esc(w.window) + '</caption><thead><tr><th></th>' + head + '</tr></thead><tbody>' + body + '</tbody>' + mae + '</table>';
+    // Oct 27, 2026 (Joe): the window's name inside its card, top left ("2026 Weeks 1-8", "2023-2026 Weeks 1-15")
+    const wl = String(w.window).replace(/\bweeks\b/, 'Weeks').replace(/^(\d{2})(\d{2})-(\d{2})\b/, (m, c, a, b) => c + a + '-' + c + b);
+    return '<table class="rec"><caption class="sr">' + esc(wl) + '</caption><thead><tr><th class="win" scope="col">' + esc(wl) + '</th>' + head + '</tr></thead><tbody>' + body + '</tbody>' + mae + '</table>';
   }).join('');
 
   // ---- slate
