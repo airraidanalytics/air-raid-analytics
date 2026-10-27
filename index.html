@@ -309,7 +309,7 @@ table.rtg { border-collapse: collapse; width: 100%; font-size: 14px; }
       const lab = mk[0].buckets[k].label + (k === 0 && /^0/.test(mk[0].buckets[k].label) ? ' · no play' : '');
       body += '<tr><th scope="row">' + esc(lab) + '</th>' + mk.map((r) => { const b = r.buckets[k]; return '<td>' + b.w + '-' + b.l + (b.p ? '-' + b.p : '') + (b.pct != null ? '<span class="pct">' + b.pct.toFixed(1) + '%</span>' : '') + '</td>'; }).join('') + '</tr>';
     }
-    const maeRow = mk.some((r) => r.mae) ? '<tr><th scope="row">MAE model / Vegas</th>' + mk.map((r) => '<td>' + (r.mae ? r.mae.model.toFixed(2) + ' / ' + r.mae.line.toFixed(2) : '') + '</td>').join('') + '</tr>' : '';
+    const maeRow = mk.some((r) => r.mae) ? '<tr><th scope="row">MAE Model / Vegas</th>' + mk.map((r) => '<td>' + (r.mae ? r.mae.model.toFixed(2) + ' / ' + r.mae.line.toFixed(2) : '') + '</td>').join('') + '</tr>' : '';
     // Oct 27, 2026 (Joe): straight-up winners, the model's side vs. the line's favourite, on the same games (pick'ems left out)
     const suRow = mk.some((r) => r.su) ? '<tr><th scope="row"><abbr title="Straight up: how often the model’s side and the Vegas favorite won the game outright, on the same games (pick’em lines left out)">SU Model / Vegas</abbr></th>' +
       mk.map((r) => '<td>' + (r.su ? '<span title="' + r.su.n + ' games">' + r.su.model.toFixed(1) + '% / ' + r.su.line.toFixed(1) + '%</span>' : '') + '</td>').join('') + '</tr>' : '';
