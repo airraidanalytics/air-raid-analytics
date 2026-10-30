@@ -128,6 +128,10 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .lv::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--loss); }
 .lv.fin { color: var(--muted); } .lv.fin::before { display: none; }
 .lv-up { color: var(--win); font-weight: 600; } .lv-dn { color: var(--loss); font-weight: 600; } .lv-eq { color: var(--muted); font-weight: 600; }
+/* Oct 30, 2026, 7:44 PM (Joe): a football beside the team with the ball; down, distance and field position under the clock (red inside the 20) */
+.ball { flex: none; width: 14px; height: 9px; display: block; }
+.dd { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); white-space: nowrap; margin-top: 1px; }
+.dd.rz { color: var(--loss); font-weight: 600; }
 .stars { display: inline-flex; gap: 2px; vertical-align: middle; }
 .stars svg { width: 13px; height: 13px; display: block; }
 .stars path.on { fill: var(--accent); } .stars path.off { fill: var(--star-off); }
@@ -503,18 +507,21 @@ html.snap-rows { scroll-snap-type: y proximity; }
   const LVW = { W: 'covering', L: 'not covering', P: 'on the number' };
   const pickCls = (r) => (r.result ? 'res-' + esc(r.result) : r.live && r.live.cover ? (r.live.state === 'post' ? 'res-' + r.live.cover : 'lv-' + ({ W: 'up', L: 'dn', P: 'eq' }[r.live.cover])) : '');
   const pickTip = (r) => (!r.result && r.live && r.live.cover && r.live.state === 'in' ? ' title="Live: ' + LVW[r.live.cover] + ' the card\u2019s line"' : '');
-  const teamCell = (t) => '<span class="team">' + badge(t) + rank(t.rank) + '<span>' + esc(t.team) + '</span>' + (t.score != null ? '<span class="score">' + t.score + '</span>' : '') + '</span>';
+  const BALL = '<svg class="ball" viewBox="0 0 28 18" role="img" aria-label="has the ball"><title>Has the ball</title><ellipse cx="14" cy="9" rx="13" ry="8" fill="#8a4b22"/>' +
+    '<path d="M8 9h12M11 6.5v5M14 6.5v5M17 6.5v5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const teamCell = (t) => '<span class="team">' + badge(t) + rank(t.rank) + '<span>' + esc(t.team) + '</span>' + (t.poss ? BALL : '') + (t.score != null ? '<span class="score">' + t.score + '</span>' : '') + '</span>';
+  const ddHTML = (r) => (r.live && r.live.state === 'in' && r.live.dd ? '<span class="dd' + (r.live.rz ? ' rz' : '') + '">' + esc(r.live.dd) + '</span>' : '');
   const pickHTML = (r) => (r.key_flip ? '<span class="dag" title="Key-number pick: under ' + esc(String((D.gates || [1])[0])) + ' point' + (((D.gates || [1])[0]) == 1 ? '' : 's') + ' from the line (below the first gate), the side with the better cover chance given how often 3s and 7s land">†</span>' : '') +
     (r.pick ? '<span class="' + pickCls(r) + '"' + pickTip(r) + '>' + num(r.pick).replace(/ -(\d)/, ' −$1') + '</span>' : '—');
   function rowHTML(r) {
-    return '<tr class="g"><td class="kick">' + kick(r) + '</td><td class="l">' + teamCell(r.away) + '</td><td class="at">' + (r.neutral ? 'vs' : '@') + '</td><td class="l">' + teamCell(r.home) + '</td>' +
+    return '<tr class="g"><td class="kick">' + kick(r) + ddHTML(r) + '</td><td class="l">' + teamCell(r.away) + '</td><td class="at">' + (r.neutral ? 'vs' : '@') + '</td><td class="l">' + teamCell(r.home) + '</td>' +
       COLS.map((c) => '<td class="num' + (ADJ[c.key] ? ' adj' : '') + (c.key === 'edge' ? ' edge' + (r.edge_hi ? ' hi' : '') : '') + '">' + num(r[c.key]) + '</td>').join('') +
       '<td class="pick l">' + pickHTML(r) + '</td><td class="num">' + esc(r.win) + '</td><td class="tv l">' + (esc(r.tv) || '—') + '</td><td class="l">' + stars(r.stars) + '</td></tr>';
   }
   function cardHTML(r) {
     const hab = r.home.abbr;
     const strip = COLS.filter((c) => c.key !== 'edge' && r[c.key] !== '' && r[c.key] != null).map((c) => '<span><span class="lbl">' + esc(c.label) + '</span><b class="grid-n">' + num(r[c.key]) + '</b></span>').join('');
-    return '<article class="gcard' + (r.stars > 0 ? ' play' : '') + '"><div class="top"><span>' + kick(r) + (r.tv ? ' · ' + esc(r.tv) : '') + '</span>' + stars(r.stars) + '</div>' +
+    return '<article class="gcard' + (r.stars > 0 ? ' play' : '') + '"><div class="top"><span>' + kick(r) + (r.tv ? ' · ' + esc(r.tv) : '') + ddHTML(r) + '</span>' + stars(r.stars) + '</div>' +
       '<div class="teams"><div class="row">' + teamCell(r.away) + '</div><div class="row"><span class="at">' + (r.neutral ? 'vs' : '@') + '</span>' + teamCell(r.home) + '</div></div>' +
       '<div class="pickrow"><span><span class="lbl">Pick</span><span class="p">' + pickHTML(r) + '</span></span>' +
       '<span><span class="lbl">Edge</span><span class="e grid-n' + (r.edge_hi ? ' hi' : '') + '">' + num(r.edge) + '</span></span>' +
@@ -548,16 +555,17 @@ html.snap-rows { scroll-snap-type: y proximity; }
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderSlate(); });
 
   // ---- live scores (Oct 30, 2026; Joe, 7:30 PM: "lets roll with espn"): ESPN's public college-football scoreboard, read by the visitor's
-  // browser once a minute while a card game is on (15 minutes before its kickoff to 5 hours after) and the page is visible: the score, the
+  // browser every 15 seconds while a card game is on (15 minutes before its kickoff to 5 hours after) and the page is visible: the score, the
   // clock, and whether the pick covers the card's LINE (home spread) -- display only, never a model input.  A failed or blocked request
   // leaves the page as printed.  Matched by game id (CFBD's ids are ESPN's); ESPN's home side is the card's unless both abbreviations say
   // the teams are listed the other way round.  The current week's board, plus a day's board for a game it lacks.
   const LV_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
-  const LV_BEFORE = 15 * 60e3, LV_AFTER = 5 * 3600e3, LV_EVERY = 60e3;
+  const LV_BEFORE = 15 * 60e3, LV_AFTER = 5 * 3600e3, LV_EVERY = 15e3;   // Oct 30, 2026, 7:39 PM (Joe: a more frequent refresh): 15 s (was 60 s; ESPN's board is max-age=1, its clock moves every ~10 s)
   const lvKick = (r) => Date.parse(r.kick_iso || '');
   const lvIn = (r, now) => { const k = lvKick(r); return isFinite(k) && now >= k - LV_BEFORE && now <= k + LV_AFTER; };
   const lvYmd = (t) => new Date(t).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).replace(/-/g, '');
   let lvSig = '', lvT = null, lvBusy = false;
+  const lvDay = {}, lvExtra = {};
   function lvCover(r, hs, as) {
     const L = parseFloat(String(r.line).replace('\u2212', '-'));
     if (!isFinite(L) || (r.pick_side !== 'home' && r.pick_side !== 'away')) return '';
@@ -578,8 +586,10 @@ html.snap-rows { scroll-snap-type: y proximity; }
       if (!document.hidden && want.length) {
         const by = {};
         (await lvBoard('')).forEach((e) => { by[String(e.id)] = e; });
-        const days = [...new Set(want.filter((r) => !by[String(r.game_id)]).map((r) => lvYmd(lvKick(r))))].slice(0, 2);
-        for (const d of days) (await lvBoard('&dates=' + d)).forEach((e) => { by[String(e.id)] = e; });
+        // a game the week's board lacks: that day's board, at most once every 10 minutes per day (not on every 15-second refresh)
+        const days = [...new Set(want.filter((r) => !by[String(r.game_id)]).map((r) => lvYmd(lvKick(r))))].filter((d) => !(now - (lvDay[d] || 0) < 600e3)).slice(0, 2);
+        for (const d of days) { lvDay[d] = now; (await lvBoard('&dates=' + d)).forEach((e) => { by[String(e.id)] = e; lvExtra[String(e.id)] = e; }); }
+        Object.keys(lvExtra).forEach((k) => { if (!by[k]) by[k] = lvExtra[k]; });
         let sig = '';
         (D.rows || []).forEach((r) => {
           const e = by[String(r.game_id)], c = e && e.competitions && e.competitions[0], t = e && e.status && e.status.type;
@@ -590,8 +600,14 @@ html.snap-rows { scroll-snap-type: y proximity; }
           const hs = parseInt((swap ? A : H).score, 10), as = parseInt((swap ? H : A).score, 10);
           if (!isFinite(hs) || !isFinite(as)) return;
           r.home.score = hs; r.away.score = as;
-          r.live = { state: t.state, detail: t.shortDetail || (t.state === 'post' ? 'Final' : ''), cover: lvCover(r, hs, as) };
-          sig += r.game_id + ':' + hs + '-' + as + ':' + r.live.detail + ';';
+          // Oct 30, 2026, 7:44 PM: who has the ball (ESPN's situation.possession = a team id), down and distance with the field position
+          // ("1st & 10 at CLT 46"), and the red zone -- while the game is on only
+          const sit = (t.state === 'in' && c.situation) || {}, pid = sit.possession != null ? String(sit.possession) : '';
+          const hId = String(((swap ? A : H).team || {}).id || ''), aId = String(((swap ? H : A).team || {}).id || '');
+          r.home.poss = !!pid && pid === hId; r.away.poss = !!pid && pid === aId;
+          r.live = { state: t.state, detail: t.shortDetail || (t.state === 'post' ? 'Final' : ''), cover: lvCover(r, hs, as),
+            dd: pid ? String(sit.downDistanceText || '') : '', rz: !!sit.isRedZone };
+          sig += r.game_id + ':' + hs + '-' + as + ':' + r.live.detail + ':' + pid + ':' + r.live.dd + ';';
         });
         if (sig !== lvSig) { lvSig = sig; renderSlate(); }
       }
