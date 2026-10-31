@@ -145,7 +145,7 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .day span { font-family: var(--font-body); font-weight: 400; letter-spacing: 0; color: var(--muted); font-size: 13px; }
 .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 5px 10px; }   /* Oct 30, 2026, 9:18 PM (Joe): half the space between cards (was 10 px) */
 .gcard { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px 11px; display: grid; gap: 7px; min-width: 0; }
-.gcard.play { border-color: color-mix(in srgb, var(--accent) 45%, var(--rule)); }
+.gcard { border-color: color-mix(in srgb, var(--accent) 45%, var(--rule)); }   /* Oct 30, 2026, 9:35 PM (Joe): the blue border on every card (was the plays only) */
 .gcard .top { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; gap: 8px; }
 .gcard .teams { display: grid; gap: 4px; }
 .gcard .teams .row { display: flex; align-items: center; gap: 7px; min-width: 0; }
