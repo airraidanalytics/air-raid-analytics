@@ -7,10 +7,14 @@ clear the website of already played games? Go ahead and clear out last nights an
 A game counts as played once its kickoff is HOURS (default 4.5) behind --now (default: the clock); a TBD kickoff counts as 11:59 PM
 ET of its date, so it stays up through its day.  The page keeps its game rows in the <script id="card-data"> JSON, and the slate,
 the day bands, the filter chips and the counts are all drawn from them, so dropping rows is the whole change.  The header's
-records are untouched: finished games still count there.  make_web.py applies the same rule (clear_rows) when it builds the
-page; the daily scheduled task runs this script on the published page (the site repository's tools/clear_played.py, copied there
+records are untouched: finished games still count there.  make_web.py applied the same rule (clear_rows) when it built the
+page until Oct 30, 2026; the daily scheduled task runs this script on the published page (the site repository's tools/clear_played.py, copied there
 by publish_site.sh).  Prints one line per removed game and "removed N of M"; writes only when it removed something.  Exit 2 when
 the page has no card data.
+
+Oct 30, 2026, 9:18 PM (Joe: "Add back in the games already played for that week but put them at the bottom"): played games now STAY on
+the page, which moves them to the bottom itself.  Without --remove this script only lists them ("kept"), prints "removed 0 of M" and
+writes nothing, so the daily task and cfb.py publish (which run it) leave the page as it is; --remove takes them off as before.
 """
 import sys, re, json, argparse
 from datetime import datetime, timedelta, timezone
@@ -55,6 +59,7 @@ def main():
     ap.add_argument('page'); ap.add_argument('--now', default=None, help='ISO time (default: now)')
     ap.add_argument('--hours', type=float, default=4.5, help='hours after kickoff a game counts as played (default 4.5)')
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--remove', action='store_true', help='take played games off the page (the behaviour before Oct 30, 2026, 9:18 PM)')
     a = ap.parse_args()
     now = datetime.fromisoformat(a.now) if a.now else datetime.now(timezone.utc)
     if now.tzinfo is None:
@@ -65,6 +70,12 @@ def main():
         print('no card data in %s' % a.page); sys.exit(2)
     D = json.loads(m.group(2))
     n0 = len(D.get('rows') or [])
+    if not a.remove:                                     # Oct 30, 2026, 9:18 PM: played games stay (the page moves them to the bottom)
+        kept = [r for r in (D.get('rows') or []) if played(r, now, D.get('season'), a.hours)]
+        for r in kept:
+            print('  kept (played): %s %s  %s @ %s' % (r.get('date'), r.get('kick'), (r.get('away') or {}).get('team'), (r.get('home') or {}).get('team')))
+        print('removed 0 of %d games (played games stay on the page, at the bottom; %d played); %d left on the page' % (n0, len(kept), n0))
+        return
     gone = clear_rows(D, now, a.hours)
     for r in gone:
         print('  played: %s %s  %s @ %s' % (r.get('date'), r.get('kick'), (r.get('away') or {}).get('team'), (r.get('home') or {}).get('team')))
