@@ -39,6 +39,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .num, .rec td, .rtg td, .grid-n { font-variant-numeric: tabular-nums; }
 a { color: var(--accent-ink); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+html { -webkit-tap-highlight-color: transparent; }   /* Oct 30, 2026, 8:51 PM (Joe: "take away the blue action that happens when you click a box") */
+select.search:focus, select.search:focus-visible, .gcard .info:focus, .gcard .info:focus-visible, .search:focus, .search:focus-visible { outline: none; }
 
 /* masthead */
 .mast { background: var(--surface); border-bottom: 1px solid var(--rule); }
@@ -186,11 +188,12 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .gcard .pop.down { bottom: auto; top: calc(100% - 4px); }
 .gcard .pop.down::after { bottom: auto; top: -6px; border: 6px solid transparent; border-top: 0; border-bottom-color: var(--ink); }
 /* Oct 30, 2026, 8:39 PM (Joe: "a tad more compressed vertically"): tighter card padding and row gaps, same fonts and horizontal spacing */
-.gcard { padding-block: 8px; gap: 4px; }
+.gcard { padding-block: 6px; gap: 3px; }   /* 8:51 PM: about 5% shorter again */
 .gcard .teams { gap: 1px; }
 .gcard .strip { padding-top: 5px; }
 /* the slate's three dropdowns share the filter row on a phone (the count, which the stars dropdown already shows, steps aside) */
-@media (max-width: 760px) { #f-slate select.search { flex: 1 1 0; min-width: 0; width: auto; padding-inline: 8px 4px; } #f-slate #f-stars { flex-grow: 1.35; } #f-slate .count { display: none; } }
+/* Oct 30, 2026, 8:51 PM (Joe): the games filter 25% narrower (sized to its text), the day filter wide enough to show "Saturday night (13)" */
+@media (max-width: 760px) { #f-slate { gap: 8px; } #f-slate select.search { flex: 1 1 0; min-width: 0; width: auto; padding-inline: 7px 2px; } #f-slate #f-stars { flex: 0 0 auto; } #f-slate #f-day { flex-grow: 1.6; } #f-slate .count { display: none; } }
 .empty { color: var(--muted); padding: 28px 0; text-align: center; }
 @media (max-width: 1079px) { .tablebox { display: none; } .cards { display: block; } }
 
@@ -596,15 +599,15 @@ html.snap-rows { scroll-snap-type: y proximity; }
     const h = etHour(r);
     return r.tbd || h == null ? 'Sat' : h < 15 ? 'Sat-early' : h < 19 ? 'Sat-late' : 'Sat-night';
   }
-  const winLabel = (w) => (w.startsWith('Sat-') ? 'Saturday ' + w.slice(4) : DAYN[w] || w);
+  const winLabel = (w) => (w.startsWith('Sat-') ? 'Saturday ' + w.charAt(4).toUpperCase() + w.slice(5) : DAYN[w] || w);   // "Saturday Early" (8:51 PM)
   const wins = [];
   (D.rows || []).forEach((r) => { const w = winOf(r); if (!wins.includes(w)) wins.push(w); });
   const nOf = (f) => (D.rows || []).filter(f).length;
   $('f-stars').innerHTML = [0, 1, 2, 3].filter((k) => k <= SLOTS).map((k) => '<option value="' + k + '">' +
-    (k === 0 ? 'All games' : k + '★' + (k < SLOTS ? '+' : '')) + ' (' + nOf((r) => r.stars >= k) + ')</option>').join('');
-  $('f-day').innerHTML = '<option value="all">All days</option>' + wins.map((w) => '<option value="' + esc(w) + '">' + esc(winLabel(w)) + ' (' + nOf((r) => winOf(r) === w) + ')</option>').join('');
+    (k === 0 ? 'All Games' : k + '★' + (k < SLOTS ? '+' : '')) + ' (' + nOf((r) => r.stars >= k) + ')</option>').join('');
+  $('f-day').innerHTML = '<option value="all">All Days</option>' + wins.map((w) => '<option value="' + esc(w) + '">' + esc(winLabel(w)) + ' (' + nOf((r) => winOf(r) === w) + ')</option>').join('');
   const TEAMS = [...new Set((D.rows || []).flatMap((r) => [r.away.team, r.home.team]))].sort((a, b) => a.localeCompare(b));
-  $('f-team').innerHTML = '<option value="">All teams</option>' + TEAMS.map((t) => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
+  $('f-team').innerHTML = '<option value="">All Teams</option>' + TEAMS.map((t) => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
   function renderSlate() {
     const rows = (D.rows || []).filter((r) => r.stars >= S.min && (S.win === 'all' || winOf(r) === S.win) && (!S.team || r.away.team === S.team || r.home.team === S.team));
     const groups = [];
