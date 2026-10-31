@@ -158,13 +158,15 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .gcard .nums b { color: var(--ink); font-weight: 500; }
 /* Oct 30, 2026, 7:59 PM (Joe: "I like B"): the pick beside the stars, one strip of numbers, the (i) and its popover */
 .gcard { position: relative; }
-.gcard .top .tl { min-width: 0; }
-.gcard .top .tl > span { white-space: nowrap; }
+.gcard .top .tl { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 14px; min-width: 0; }   /* Oct 30, 8:17 PM: spaced, no dots, centred */
+.gcard .top .tl > span { white-space: nowrap; display: inline-flex; align-items: center; }
+.gcard .top .lv { line-height: 1; }
 .gcard .top .ddi { color: var(--ink); font-weight: 500; } .gcard .top .ddi.rz { color: var(--loss); font-weight: 600; }
 .gcard .strip b.pk { font-weight: 700; margin-right: 6px; padding: 0 5px; border-radius: 5px; background: var(--accent-soft); color: var(--accent-ink); }
 @media (max-width: 379px) { .gcard .strip { gap: 2px; } .gcard .strip b { margin-right: 2px; } .gcard .strip b.pk { margin-right: 4px; padding: 0 4px; } }
-.gcard .teams .wp { margin-left: auto; flex: none; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-.gcard .teams .wp small { font-size: 11px; }
+/* Oct 30, 2026, 8:17 PM (Joe: "move the score to the right; maybe not all the way. vertically align the scores"): a score column */
+.gcard .teams .row { display: grid; grid-template-columns: 16px minmax(0, 1fr) 3.2em 22%; align-items: center; gap: 0 7px; }
+.gcard .teams .sc { text-align: right; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
 .gcard .strip b.pk.lv-up, .gcard .strip b.pk.res-W { color: var(--win); background: color-mix(in srgb, var(--win) 14%, transparent); }
 .gcard .strip b.pk.lv-dn, .gcard .strip b.pk.res-L { color: var(--loss); background: color-mix(in srgb, var(--loss) 14%, transparent); }
 .gcard .strip b.pk.lv-eq, .gcard .strip b.pk.res-P { color: var(--muted); background: var(--band); }
@@ -563,14 +565,16 @@ html.snap-rows { scroll-snap-type: y proximity; }
     // Oct 30, 2026, 8:09 PM (Joe): the pick back on the bottom strip, first; down, distance and the yard line beside the clock, the TV after it
     const pk = r.pick && ps ? (r.key_flip ? '<span class="dag" title="Key-number pick: under ' + esc(String((D.gates || [1])[0])) + ' point' + (((D.gates || [1])[0]) == 1 ? '' : 's') + ' from the line">†</span>' : '') +
       '<b class="pk ' + pickCls(r) + '" title="' + (pickTip(r) ? 'The pick; live: ' + LVW[r.live.cover] + ' the card\u2019s line' : 'The pick') + '">' + esc(ps.abbr) + ' ' + shortN(String(r.pick).split(' ').pop()) + '</b>' : '';
-    const ddi = r.live && r.live.state === 'in' && r.live.dd ? ' · <span class="ddi' + (r.live.rz ? ' rz' : '') + '">' + esc(r.live.dd) + '</span>' : '';
+    const ddi = r.live && r.live.state === 'in' && r.live.dd ? '<span class="ddi' + (r.live.rz ? ' rz' : '') + '">' + esc(r.live.dd) + '</span>' : '';
     const it = (lbl, v, cls) => (v === '' || v == null ? '' : '<span class="lbl">' + lbl + '</span><b class="grid-n' + (cls || '') + '">' + v + '</b>');
-    const strip = it('Line', shortN(r.line)) + it('Open', shortN(r.open)) + it('Proj', shortN(r.proj)) + it('Edge', shortN(r.edge), r.edge_hi ? ' hi' : '');
-    // Oct 30, 2026, 8:09 PM: each team's chance to win on its own row (right-aligned), so the strip holds the pick and the four spreads
-    const hw = parseFloat(String(r.win)), wp = (v) => (isFinite(v) ? '<span class="wp">' + Math.round(v) + '%<small> win</small></span>' : '');
+    // Oct 30, 2026, 8:17 PM (Joe: "move the win % down to the bottom line"): the home win % back at the strip's end
+    const strip = it('Open', shortN(r.open)) + it('Proj', shortN(r.proj)) + it('Edge', shortN(r.edge), r.edge_hi ? ' hi' : '') + (r.win ? it(esc(hab), esc(r.win)) : '');
+    // the team rows: name (and the ball) | the score in its own column, so both scores line up, short of the right edge
+    const cteam = (t) => '<span class="team">' + badge(t) + rank(t.rank) + '<span class="nm">' + esc(t.team) + '</span>' + (t.poss ? BALL : '') + '</span>';
+    const csc = (t) => '<span class="sc">' + (t.score != null ? esc(t.score) : '') + '</span>';
     const open = openPop === String(r.game_id);
-    return '<article class="gcard' + (r.stars > 0 ? ' play' : '') + '" data-gid="' + esc(r.game_id) + '"><div class="top"><span class="tl">' + kick(r) + ddi + (r.tv ? ' · <span class="tvn">' + esc(r.tv) + '</span>' : '') + '</span>' + stars(r.stars) + '</div>' +
-      '<div class="teams"><div class="row">' + teamCell(r.away) + wp(100 - hw) + '</div><div class="row"><span class="at">' + (r.neutral ? 'vs' : '@') + '</span>' + teamCell(r.home) + wp(hw) + '</div></div>' +
+    return '<article class="gcard' + (r.stars > 0 ? ' play' : '') + '" data-gid="' + esc(r.game_id) + '"><div class="top"><span class="tl"><span class="kk">' + kick(r) + '</span>' + ddi + (r.tv ? '<span class="tvn">' + esc(r.tv) + '</span>' : '') + '</span>' + stars(r.stars) + '</div>' +
+      '<div class="teams"><div class="row">' + cteam(r.away) + csc(r.away) + '</div><div class="row"><span class="at">' + (r.neutral ? 'vs' : '@') + '</span>' + cteam(r.home) + csc(r.home) + '</div></div>' +
       '<div class="strip">' + pk + strip + '<button class="info" type="button" aria-label="How the projection is built" aria-expanded="' + open + '">i</button></div>' + (open ? popHTML(r) : '') + '</article>';
   }
   const S = { min: 0, day: 'all', q: '' };
