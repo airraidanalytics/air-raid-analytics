@@ -183,6 +183,14 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .gcard .pop .tot { border-top: 1px solid color-mix(in srgb, var(--surface) 30%, transparent); margin-top: 4px; padding-top: 4px; font-weight: 700; }
 .gcard .pop .note { opacity: .75; font-size: 11px; margin-top: 5px; line-height: 1.3; }
 .gcard .pop::after { content: ''; position: absolute; right: 12px; bottom: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--ink); }
+.gcard .pop.down { bottom: auto; top: calc(100% - 4px); }
+.gcard .pop.down::after { bottom: auto; top: -6px; border: 6px solid transparent; border-top: 0; border-bottom-color: var(--ink); }
+/* Oct 30, 2026, 8:39 PM (Joe: "a tad more compressed vertically"): tighter card padding and row gaps, same fonts and horizontal spacing */
+.gcard { padding-block: 8px; gap: 4px; }
+.gcard .teams { gap: 1px; }
+.gcard .strip { padding-top: 5px; }
+/* the slate's three dropdowns share the filter row on a phone (the count, which the stars dropdown already shows, steps aside) */
+@media (max-width: 760px) { #f-slate select.search { flex: 1 1 0; min-width: 0; width: auto; padding-inline: 8px 4px; } #f-slate #f-stars { flex-grow: 1.35; } #f-slate .count { display: none; } }
 .empty { color: var(--muted); padding: 28px 0; text-align: center; }
 @media (max-width: 1079px) { .tablebox { display: none; } .cards { display: block; } }
 
@@ -295,9 +303,9 @@ html.snap-rows { scroll-snap-type: y proximity; }
       <button class="tab" type="button" data-view="ratings" id="tab-ratings">Power Ratings</button>
     </div>
     <div class="filters" id="f-slate">
-      <div class="seg" id="f-stars" role="group" aria-label="Minimum stars"></div>
-      <div class="seg" id="f-day" role="group" aria-label="Day"></div>
-      <input class="search" id="q" type="search" placeholder="Find a team" aria-label="Find a team" autocomplete="off">
+      <select class="search" id="f-stars" aria-label="Stars"></select>
+      <select class="search" id="f-day" aria-label="Day and kickoff window"></select>
+      <select class="search" id="f-team" aria-label="Team"></select>
       <span class="count" id="count" aria-live="polite"></span>
     </div>
     <div class="filters" id="f-rk" hidden>
@@ -577,31 +585,46 @@ html.snap-rows { scroll-snap-type: y proximity; }
       '<div class="teams"><div class="row">' + cteam(r.away) + csc(r.away) + '</div><div class="row"><span class="at">' + (r.neutral ? 'vs' : '@') + '</span>' + cteam(r.home) + csc(r.home) + '</div></div>' +
       '<div class="strip">' + pk + strip + '<button class="info" type="button" aria-label="How the projection is built" aria-expanded="' + open + '">i</button></div>' + (open ? popHTML(r) : '') + '</article>';
   }
-  const S = { min: 0, day: 'all', q: '' };
-  const days = [];
-  (D.rows || []).forEach((r) => { if (!days.includes(r.date)) days.push(r.date); });
-  const plays = (k) => (D.rows || []).filter((r) => r.stars >= k).length;
-  $('f-stars').innerHTML = [0, 1, 2, 3].filter((k) => k <= SLOTS).map((k) => '<button class="chip" type="button" data-min="' + k + '" aria-pressed="' + (k === 0) + '">' +
-    (k === 0 ? 'All games' : stars(k, k) + (k < SLOTS ? '+' : '')) + ' <span class="n">' + plays(k) + '</span></button>').join('');
-  $('f-day').innerHTML = ['all'].concat(days).map((d) => '<button class="chip" type="button" data-day="' + esc(d) + '" aria-pressed="' + (d === 'all') + '">' + (d === 'all' ? 'All days' : esc(d.split(' ')[0])) + '</button>').join('');
-  const hit = (t, q) => t.team.toLowerCase().includes(q) || String(t.abbr).toLowerCase() === q;
+  // Oct 30, 2026, 8:39 PM (Joe): the slate's filters are three dropdowns -- stars (with counts), the day and kickoff window (Saturday split
+  // into early / late / night by the ET kickoff: before 3 PM, 3-6:59 PM, 7 PM on; another day whole), and the team
+  const S = { min: 0, win: 'all', team: '' };
+  const DAYN = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
+  const etHour = (r) => { const m = /T(\d{2}):/.exec(String(r.kick_iso || '')); return m ? +m[1] : null; };   // kick_iso carries the ET offset
+  function winOf(r) {
+    const d = String(r.date || '').split(' ')[0];
+    if (d !== 'Sat') return d;
+    const h = etHour(r);
+    return r.tbd || h == null ? 'Sat' : h < 15 ? 'Sat-early' : h < 19 ? 'Sat-late' : 'Sat-night';
+  }
+  const winLabel = (w) => (w.startsWith('Sat-') ? 'Saturday ' + w.slice(4) : DAYN[w] || w);
+  const wins = [];
+  (D.rows || []).forEach((r) => { const w = winOf(r); if (!wins.includes(w)) wins.push(w); });
+  const nOf = (f) => (D.rows || []).filter(f).length;
+  $('f-stars').innerHTML = [0, 1, 2, 3].filter((k) => k <= SLOTS).map((k) => '<option value="' + k + '">' +
+    (k === 0 ? 'All games' : k + '★' + (k < SLOTS ? '+' : '')) + ' (' + nOf((r) => r.stars >= k) + ')</option>').join('');
+  $('f-day').innerHTML = '<option value="all">All days</option>' + wins.map((w) => '<option value="' + esc(w) + '">' + esc(winLabel(w)) + ' (' + nOf((r) => winOf(r) === w) + ')</option>').join('');
+  const TEAMS = [...new Set((D.rows || []).flatMap((r) => [r.away.team, r.home.team]))].sort((a, b) => a.localeCompare(b));
+  $('f-team').innerHTML = '<option value="">All teams</option>' + TEAMS.map((t) => '<option value="' + esc(t) + '">' + esc(t) + '</option>').join('');
   function renderSlate() {
-    const q = S.q.trim().toLowerCase();
-    const rows = (D.rows || []).filter((r) => r.stars >= S.min && (S.day === 'all' || r.date === S.day) && (!q || hit(r.away, q) || hit(r.home, q)));
+    const rows = (D.rows || []).filter((r) => r.stars >= S.min && (S.win === 'all' || winOf(r) === S.win) && (!S.team || r.away.team === S.team || r.home.team === S.team));
     const groups = [];
     rows.forEach((r) => { let g = groups.find((x) => x.date === r.date); if (!g) { g = { date: r.date, rows: [] }; groups.push(g); } g.rows.push(r); });
     const cnt = (k) => '\u2009\u00b7\u2009' + k + (k === 1 ? ' game' : ' games');   // Oct 29, 2026 (audit 13, output F9): a separator before the count, so a screen reader does not read "OCT 292 games"
-    $('slate').innerHTML = head + (groups.length ? groups.map((g) => '<tbody><tr class="band"><th colspan="' + NCOL + '" scope="colgroup">' + esc(String(g.date).toUpperCase()) + '<span>' + cnt(g.rows.length) + '</span></th></tr>' + g.rows.map(rowHTML).join('') + '</tbody>').join('')
+    const dcnt = (k) => '<span class="sr">, </span>' + k + (k === 1 ? ' game' : ' games');   // Oct 30, 2026, 8:39 PM (Joe): no dot before the day's count
+    $('slate').innerHTML = head + (groups.length ? groups.map((g) => '<tbody><tr class="band"><th colspan="' + NCOL + '" scope="colgroup">' + esc(String(g.date).toUpperCase()) + '<span>' + dcnt(g.rows.length) + '</span></th></tr>' + g.rows.map(rowHTML).join('') + '</tbody>').join('')
       : '<tbody><tr><td colspan="' + NCOL + '" class="empty">' + EMPTY + '</td></tr></tbody>');
-    $('cards').innerHTML = groups.length ? groups.map((g) => '<h3 class="day">' + esc(String(g.date).toUpperCase()) + '<span>' + cnt(g.rows.length) + '</span></h3><div class="cgrid">' + g.rows.map(cardHTML).join('') + '</div>').join('')
+    $('cards').innerHTML = groups.length ? groups.map((g) => '<h3 class="day">' + esc(String(g.date).toUpperCase()) + '<span>' + dcnt(g.rows.length) + '</span></h3><div class="cgrid">' + g.rows.map(cardHTML).join('') + '</div>').join('')
       : '<p class="empty">' + EMPTY + '</p>';
     const p = rows.filter((r) => r.stars > 0).length;
-    $('count').textContent = cnt(rows.length) + ' · ' + p + (p === 1 ? ' play' : ' plays');
+    $('count').textContent = rows.length + (rows.length === 1 ? ' game' : ' games') + ' · ' + p + (p === 1 ? ' play' : ' plays');   // no leading dot (Oct 30, 8:39 PM)
+    // Oct 30, 2026, 8:39 PM (Joe: the top game's (i) hid behind the bar): an (i) whose popover would reach under the sticky bar opens downward
+    const pop = document.querySelector('.gcard .pop');
+    if (pop) { const bar = document.querySelector('.bar'); if (pop.getBoundingClientRect().top < (bar ? bar.getBoundingClientRect().bottom : 0) + 6) pop.classList.add('down'); }
     restick(); resnap();   // Oct 30, 2026 (Joe, 12:23 PM): the snap stops follow the new rows
   }
-  $('f-stars').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.min = +b.dataset.min; $('f-stars').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); renderSlate(); });
-  $('f-day').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.day = b.dataset.day; $('f-day').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); renderSlate(); });
-  $('q').addEventListener('input', (e) => { S.q = e.target.value; renderSlate(); });
+  $('f-stars').addEventListener('change', (e) => { S.min = +e.target.value; renderSlate(); });
+  $('f-day').addEventListener('change', (e) => { S.win = e.target.value; renderSlate(); });
+  $('f-team').addEventListener('change', (e) => { S.team = e.target.value; renderSlate(); });
   // Oct 30, 2026 (card B): the (i) on a game card shows the projection's parts; one open at a time, a second tap or a tap elsewhere closes it
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.gcard .info');
