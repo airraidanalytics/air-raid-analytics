@@ -1,5 +1,6 @@
 """
-Take games already played off the web page (Oct 28, 2026; Joe, 7:16 AM: "Can we run an automated push every morning at 5am est to
+Take games already played off the web page -- since Oct 30, 2026, 9:18 PM only with --remove (see below); the daily task that ran it is off
+(Oct 30, 9:26 PM).  (Oct 28, 2026; Joe, 7:16 AM: "Can we run an automated push every morning at 5am est to
 clear the website of already played games? Go ahead and clear out last nights and push").
 
   python3 clear_played.py PAGE.html [--now 2026-10-29T04:32:00-04:00] [--hours 4.5] [--dry-run]
@@ -79,7 +80,7 @@ def main():
     gone = clear_rows(D, now, a.hours)
     for r in gone:
         print('  played: %s %s  %s @ %s' % (r.get('date'), r.get('kick'), (r.get('away') or {}).get('team'), (r.get('home') or {}).get('team')))
-    print('removed %d of %d games (kicked off %.1f+ hours before %s); %d left on the page' % (
+    print(('would remove' if a.dry_run else 'removed') + ' %d of %d games (kicked off %.1f+ hours before %s); %d left on the page' % (
         len(gone), n0, a.hours, now.astimezone(ET).strftime('%a %b %-d %-I:%M %p ET'), n0 - len(gone)))
     if gone and not a.dry_run:
         data = json.dumps(D, ensure_ascii=False, allow_nan=False, separators=(',', ':')).replace('<', '\\u003c')   # as make_web.py writes it
