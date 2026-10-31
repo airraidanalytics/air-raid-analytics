@@ -156,6 +156,25 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .gcard .e.hi { color: var(--accent-ink); font-weight: 700; }
 .gcard .nums { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 13px; color: var(--muted); }
 .gcard .nums b { color: var(--ink); font-weight: 500; }
+/* Oct 30, 2026, 7:59 PM (Joe: "I like B"): the pick beside the stars, one strip of numbers, the (i) and its popover */
+.gcard { position: relative; }
+.gcard .top .tr { display: inline-flex; align-items: center; gap: 7px; flex: none; }
+.gcard .top .pk { color: var(--ink); font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+.gcard .top .pk.lv-up, .gcard .top .pk.res-W { color: var(--win); } .gcard .top .pk.lv-dn, .gcard .top .pk.res-L { color: var(--loss); } .gcard .top .pk.lv-eq, .gcard .top .pk.res-P { color: var(--muted); }
+.gcard .strip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 3px; border-top: 1px solid var(--rule); padding-top: 7px; font-size: 12.5px; min-width: 0; }
+.gcard .strip .lbl { margin-right: 0; font-size: 10.5px; letter-spacing: .03em; }
+.gcard .strip b { color: var(--ink); font-weight: 600; margin-right: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (min-width: 380px) { .gcard .strip { font-size: 13px; gap: 2px 4px; } .gcard .strip b { margin-right: 6px; } }
+.gcard .strip b.hi { color: var(--accent-ink); font-weight: 700; }
+.gcard .info { margin-left: auto; align-self: center; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--accent); background: transparent; color: var(--accent-ink); font: italic 700 12px/1 Georgia, "Times New Roman", serif; cursor: pointer; }
+.gcard .info[aria-expanded="true"] { background: var(--accent); color: var(--surface); }
+.gcard .pop { position: absolute; right: 8px; bottom: 42px; z-index: 5; width: min(270px, calc(100% - 16px)); background: var(--ink); color: var(--surface); border-radius: 9px; padding: 9px 11px; font-size: 12.5px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+.gcard .pop .g { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; }
+.gcard .pop .g span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+.gcard .pop .tot { border-top: 1px solid color-mix(in srgb, var(--surface) 30%, transparent); margin-top: 4px; padding-top: 4px; font-weight: 700; }
+.gcard .pop .note { opacity: .75; font-size: 11px; margin-top: 5px; line-height: 1.3; }
+.gcard .pop::after { content: ''; position: absolute; right: 12px; bottom: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--ink); }
 .empty { color: var(--muted); padding: 28px 0; text-align: center; }
 @media (max-width: 1079px) { .tablebox { display: none; } .cards { display: block; } }
 
@@ -518,15 +537,31 @@ html.snap-rows { scroll-snap-type: y proximity; }
       COLS.map((c) => '<td class="num' + (ADJ[c.key] ? ' adj' : '') + (c.key === 'edge' ? ' edge' + (r.edge_hi ? ' hi' : '') : '') + '">' + num(r[c.key]) + '</td>').join('') +
       '<td class="pick l">' + pickHTML(r) + '</td><td class="num">' + esc(r.win) + '</td><td class="tv l">' + (esc(r.tv) || '—') + '</td><td class="l">' + stars(r.stars) + '</td></tr>';
   }
+  // Oct 30, 2026, 7:59 PM (Joe: "I like B"): the game card (phones and tablets) -- the pick beside the stars (the picked team's abbreviation and
+  // its line, green / red while live or final), the team rows untouched (scores, the ball), and ONE strip: LINE, OPEN, PROJ, EDGE (home
+  // spreads, ".0" dropped) and the home win %; the projection's parts (MODEL, HFA, ALT, INJ, WX) behind a tappable (i)
+  const shortN = (v) => num(v).replace(/\.0$/, '');
+  const PARTS = [['model', 'Model (ratings + game terms)'], ['hfa', 'Home field + travel'], ['alt', 'Altitude'], ['inj', 'Injuries (starting QBs)'], ['wx', 'Weather']];
+  let openPop = null;                                    // the game_id whose (i) is open (kept across the live re-renders)
+  function popHTML(r) {
+    const have = PARTS.filter(([k]) => COLS.some((c) => c.key === k));
+    const ps = r.pick_side === 'home' ? r.home : r.pick_side === 'away' ? r.away : null;
+    return '<div class="pop" role="dialog" aria-label="How the projection is built"><div class="g">' +
+      have.map(([k, t]) => '<span>' + t + '</span><span>' + (r[k] === '' || r[k] == null ? '—' : num(r[k])) + '</span>').join('') +
+      '<span class="tot">Projection (home spread)</span><span class="tot">' + num(r.proj) + '</span></div>' +
+      '<div class="note">Line ' + num(r.line) + (r.open !== '' && r.open != null ? ' (opened ' + num(r.open) + ')' : '') + (ps && r.edge !== '' ? ' · edge ' + num(String(r.edge)).replace(/^[−+-]/, '') + ' toward ' + esc(ps.team) : '') + '</div></div>';
+  }
   function cardHTML(r) {
     const hab = r.home.abbr;
-    const strip = COLS.filter((c) => c.key !== 'edge' && r[c.key] !== '' && r[c.key] != null).map((c) => '<span><span class="lbl">' + esc(c.label) + '</span><b class="grid-n">' + num(r[c.key]) + '</b></span>').join('');
-    return '<article class="gcard' + (r.stars > 0 ? ' play' : '') + '"><div class="top"><span>' + kick(r) + (r.tv ? ' · ' + esc(r.tv) : '') + ddHTML(r) + '</span>' + stars(r.stars) + '</div>' +
+    const ps = r.pick_side === 'home' ? r.home : r.pick_side === 'away' ? r.away : null;
+    const pk = r.pick && ps ? (r.key_flip ? '<span class="dag" title="Key-number pick: under ' + esc(String((D.gates || [1])[0])) + ' point' + (((D.gates || [1])[0]) == 1 ? '' : 's') + ' from the line">†</span>' : '') +
+      '<span class="pk ' + pickCls(r) + '"' + pickTip(r) + '>' + esc(ps.abbr) + ' ' + num(String(r.pick).split(' ').pop()) + '</span>' : '';
+    const it = (lbl, v, cls) => (v === '' || v == null ? '' : '<span class="lbl">' + lbl + '</span><b class="grid-n' + (cls || '') + '">' + v + '</b>');
+    const strip = it('Line', shortN(r.line)) + it('Open', shortN(r.open)) + it('Proj', shortN(r.proj)) + it('Edge', shortN(r.edge), r.edge_hi ? ' hi' : '') + (r.win ? it(esc(hab), esc(r.win)) : '');
+    const open = openPop === String(r.game_id);
+    return '<article class="gcard' + (r.stars > 0 ? ' play' : '') + '" data-gid="' + esc(r.game_id) + '"><div class="top"><span>' + kick(r) + (r.tv ? ' · ' + esc(r.tv) : '') + ddHTML(r) + '</span><span class="tr">' + pk + stars(r.stars) + '</span></div>' +
       '<div class="teams"><div class="row">' + teamCell(r.away) + '</div><div class="row"><span class="at">' + (r.neutral ? 'vs' : '@') + '</span>' + teamCell(r.home) + '</div></div>' +
-      '<div class="pickrow"><span><span class="lbl">Pick</span><span class="p">' + pickHTML(r) + '</span></span>' +
-      '<span><span class="lbl">Edge</span><span class="e grid-n' + (r.edge_hi ? ' hi' : '') + '">' + num(r.edge) + '</span></span>' +
-      (r.win ? '<span><span class="lbl">' + esc(hab) + ' win</span><span class="grid-n">' + esc(r.win) + '</span></span>' : '') + '</div>' +
-      '<div class="nums">' + strip + '</div></article>';
+      '<div class="strip">' + strip + '<button class="info" type="button" aria-label="How the projection is built" aria-expanded="' + open + '">i</button></div>' + (open ? popHTML(r) : '') + '</article>';
   }
   const S = { min: 0, day: 'all', q: '' };
   const days = [];
@@ -553,6 +588,13 @@ html.snap-rows { scroll-snap-type: y proximity; }
   $('f-stars').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.min = +b.dataset.min; $('f-stars').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); renderSlate(); });
   $('f-day').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.day = b.dataset.day; $('f-day').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); renderSlate(); });
   $('q').addEventListener('input', (e) => { S.q = e.target.value; renderSlate(); });
+  // Oct 30, 2026 (card B): the (i) on a game card shows the projection's parts; one open at a time, a second tap or a tap elsewhere closes it
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.gcard .info');
+    if (b) { const g = b.closest('.gcard').dataset.gid; openPop = openPop === g ? null : g; renderSlate(); return; }
+    if (openPop && !e.target.closest('.gcard .pop')) { openPop = null; renderSlate(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && openPop) { openPop = null; renderSlate(); } });
 
   // ---- live scores (Oct 30, 2026; Joe, 7:30 PM: "lets roll with espn"): ESPN's public college-football scoreboard, read by the visitor's
   // browser every 15 seconds while a card game is on (15 minutes before its kickoff to 5 hours after) and the page is visible: the score, the
