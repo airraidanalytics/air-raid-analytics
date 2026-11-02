@@ -3,13 +3,15 @@ Take games already played off the web page -- since Oct 30, 2026, 9:18 PM only w
 (Oct 30, 9:26 PM).  (Oct 28, 2026; Joe, 7:16 AM: "Can we run an automated push every morning at 5am est to
 clear the website of already played games? Go ahead and clear out last nights and push").
 
-  python3 clear_played.py PAGE.html [--now 2026-10-29T04:32:00-04:00] [--hours 4.5] [--dry-run]
+  python3 clear_played.py PAGE.html [--now 2026-10-29T04:32:00-04:00] [--hours 4] [--dry-run]
 
-A game counts as played once its kickoff is HOURS (default 4.5) behind --now (default: the clock); a TBD kickoff counts as 11:59 PM
+A game counts as played once its kickoff is HOURS (default 4, the page's and `cfb.py publish`'s rule; 4.5 until Nov 2, 2026) behind
+--now (default: the clock); a TBD kickoff counts as 11:59 PM
 ET of its date, so it stays up through its day.  The page keeps its game rows in the <script id="card-data"> JSON, and the slate,
 the day bands, the filter chips and the counts are all drawn from them, so dropping rows is the whole change.  The header's
 records are untouched: finished games still count there.  make_web.py applied the same rule (clear_rows) when it built the
-page until Oct 30, 2026; the daily scheduled task runs this script on the published page (the site repository's tools/clear_played.py, copied there
+page until Oct 30, 2026; the daily scheduled task ran this script (off since Oct 30, 9:26 PM) on the published page (the site
+repository's tools/clear_played.py, copied there
 by publish_site.sh).  Prints one line per removed game and "removed N of M"; writes only when it removed something.  Exit 2 when
 the page has no card data.
 
@@ -58,7 +60,7 @@ def clear_rows(D, now=None, hours=4.5):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('page'); ap.add_argument('--now', default=None, help='ISO time (default: now)')
-    ap.add_argument('--hours', type=float, default=4.5, help='hours after kickoff a game counts as played (default 4.5)')
+    ap.add_argument('--hours', type=float, default=4.0, help='hours after kickoff a game counts as played (default 4; audit 21 C5, Nov 2, 2026)')
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--remove', action='store_true', help='take played games off the page (the behaviour before Oct 30, 2026, 9:18 PM)')
     a = ap.parse_args()
