@@ -67,7 +67,7 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 
 
 /* sticky bar */
 .bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule); }
-.bar .wrap { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding-block: 10px; }
+.bar .wrap { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; padding-block: 10px; }   /* Nov 2, 2026 (Joe, 8:05 PM): the filters level with the main tab row, not centred on main + sub-tabs (.filters' min-height) */
 .tabs { display: inline-flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; background: var(--band); border-radius: 9px; padding: 3px; gap: 2px; }   /* audit 19 card L5 */
 .tab { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: .02em; color: var(--muted); text-decoration: none; padding: 5px 14px; border-radius: 7px; white-space: nowrap; background: transparent; border: 0; cursor: pointer; appearance: none; line-height: 1.4; }
 .tab[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
@@ -81,7 +81,7 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 
 .egg-f input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .egg-f button { font: inherit; font-size: 16px; font-weight: 600; padding: 7px 14px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
 .egg-m { font-size: 14px; color: var(--muted); min-height: 1.3em; margin: 5px 0 0; }
-.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; flex: 1 1 auto; min-width: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; flex: 1 1 auto; min-width: 0; min-height: calc(6px + 16px * 1.4 + 10px); }   /* the main tab row's height: .tabs' padding + one .tab */
 .seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
 .chip { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .chip:hover { border-color: var(--faint); }
@@ -290,7 +290,7 @@ html.snap-rows { scroll-snap-type: y proximity; }
   .rec-dots button { width: 28px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; -webkit-tap-highlight-color: transparent; }
   .rec-dots button::before { content: ""; width: 8px; height: 8px; border-radius: 4px; background: var(--star-off); transition: width .15s, background-color .15s; }
   .rec-dots button[aria-current="true"]::before { width: 20px; background: var(--accent); }
-  .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; min-height: 0; }
   .filters::-webkit-scrollbar { display: none; }
   .seg { flex-wrap: nowrap; flex: none; }
   .search { flex: none; width: 150px; }
