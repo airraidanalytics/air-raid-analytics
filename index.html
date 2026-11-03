@@ -70,6 +70,16 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 
 .tabs { display: inline-flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; background: var(--band); border-radius: 9px; padding: 3px; gap: 2px; }   /* audit 19 card L5 */
 .tab { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: .02em; color: var(--muted); text-decoration: none; padding: 5px 14px; border-radius: 7px; white-space: nowrap; background: transparent; border: 0; cursor: pointer; appearance: none; line-height: 1.4; }
 .tab[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+/* Nov 2, 2026 (Joe, 6:41 PM: "Lets also get sub tabs going"): the main tabs, and under Slate and Position Ratings a row of sub-tabs */
+.tabnav { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 100%; min-width: 0; }
+.tabs.sub { background: none; padding: 0 3px; gap: 4px; }
+.tabs.sub .tab { font-size: 15px; padding: 3px 12px; border-radius: 999px; }
+.tabs.sub .tab[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); box-shadow: none; }
+#egg { -webkit-tap-highlight-color: transparent; }
+.egg-f { display: flex; gap: 8px; max-width: 320px; margin-top: 12px; }
+.egg-f input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.egg-f button { font: inherit; font-size: 16px; font-weight: 600; padding: 7px 14px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+.egg-m { font-size: 14px; color: var(--muted); min-height: 1.3em; margin: 5px 0 0; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; flex: 1 1 auto; min-width: 0; }
 .seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
 .chip { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
@@ -280,6 +290,7 @@ html.snap-rows { scroll-snap-type: y proximity; }
   .notes { grid-template-columns: minmax(0, 1fr); }
   .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
   .tab { font-size: 15px; padding: 5px 10px; }
+  .tabs.sub .tab { font-size: 14px; padding: 3px 10px; }
 }
 @media (prefers-reduced-motion: no-preference) { .chip, .tab { transition: background-color .15s, color .15s, border-color .15s; } }
 /* Oct 31, 2026 (Joe, 7:42 PM): the Matchup tab -- any two FBS teams and a site: the projected spread and win probability from the power
@@ -366,13 +377,21 @@ html.snap-rows { scroll-snap-type: y proximity; }
 
 <nav class="bar" aria-label="Views and filters">
   <div class="wrap">
-    <div class="tabs">
-      <button class="tab" type="button" data-view="slate" id="tab-slate"></button>
-      <span id="rk-tabs" style="display:contents"></span>
+    <!-- tabs -->
+    <div class="tabnav" id="tabnav">
+    <div class="tabs" id="tabs-main">
+      <button class="tab" type="button" data-view="slate" id="tab-slate">Slate</button>
+      <button class="tab" type="button" data-view="qb" id="tab-pos" hidden>Position Ratings</button>
       <button class="tab" type="button" data-view="ratings" id="tab-ratings">Power Ratings</button>
       <button class="tab" type="button" data-view="mx" id="tab-mx" hidden>Matchup</button>
-      <a class="tab" href="alternate/" id="tab-alt" title="Password required"><svg aria-hidden="true" width="11" height="12" viewBox="0 0 11 12" style="margin-right:5px;vertical-align:-1px"><path d="M2.6 5.2V3.6a2.9 2.9 0 0 1 5.8 0v1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="5.2" width="9" height="6.3" rx="1.3" fill="currentColor"/></svg>Alternate Slate</a>
     </div>
+    <div class="tabs sub" id="sub-slate">
+      <button class="tab" type="button" data-view="slate" id="tab-pub">Public</button>
+      <a class="tab" href="alternate/" id="tab-alt" hidden>Private</a>
+    </div>
+    <div class="tabs sub" id="sub-rk" hidden><span id="rk-tabs" style="display:contents"></span></div>
+    </div>
+    <!-- /tabs -->
     <div class="filters" id="f-slate">
       <select class="search" id="f-stars" aria-label="Stars"></select>
       <select class="search" id="f-day" aria-label="Day and kickoff window"></select>
@@ -615,8 +634,7 @@ html.snap-rows { scroll-snap-type: y proximity; }
   if (window.ResizeObserver) { const ro = new ResizeObserver(resnap); ['.mast', '.bar', 'main'].forEach((s) => ro.observe(document.querySelector(s))); }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(resnap);
 
-  // ---- slate
-  $('tab-slate').textContent = 'Week ' + (D.week || '') + ' Slate';
+  // ---- slate (Nov 2, 2026, Joe 6:41 PM: the tab "Week N Slate" is now Slate > Public; the week is in the title)
   const COLS = D.cols || [];
   // Oct 28, 2026: played games left the slate (clear_played.py); since Oct 30, 9:18 PM they stay, at the bottom -- the second message shows
   // only on a page emptied by clear_played.py --remove
@@ -940,6 +958,8 @@ html.snap-rows { scroll-snap-type: y proximity; }
   const FMT = { e3: (v) => sgn(v, 3), z2: (v) => sgn(v, 2), f1: (v) => v.toFixed(1), f2: (v) => v.toFixed(2), p1: (v) => (100 * v).toFixed(1) + '%', i: (v) => String(v) };
   const cellOf = (c, r) => c.f === 'tdint' ? r.td + '-' + r.int : (r[c.k] == null ? '—' : FMT[c.f](r[c.k]));
   $('rk-tabs').innerHTML = RKO.map((g) => '<button class="tab" type="button" data-view="' + g + '" id="tab-' + g + '">' + esc(RK.tabs[g].label) + '</button>').join('');
+  $('tab-pos').hidden = !RKO.length;                               // Nov 2, 2026 (Joe, 6:41 PM): the position tabs sit under Position Ratings
+  if (RKO.length) $('tab-pos').dataset.view = RKO[0];
   const SR = { g: RKO[0], q: '' };
   // Oct 27, 2026 (Joe, 7:51 AM: "The conference filter is broken when switching between power ratings and one of the positions"):
   // one conference choice for every table view -- the power ratings' select and the ranking tabs' select show and set the same value
@@ -1103,8 +1123,13 @@ html.snap-rows { scroll-snap-type: y proximity; }
     $('tab-slate').setAttribute('aria-current', v === 'slate' ? 'page' : 'false');
     RKO.forEach((g) => $('tab-' + g).setAttribute('aria-current', v === 'rk' && SR.g === g ? 'page' : 'false'));
     $('tab-ratings').setAttribute('aria-current', v === 'ratings' ? 'page' : 'false');
-    const cur = document.querySelector('.tab[aria-current="page"]');
-    if (cur && cur.scrollIntoView) cur.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    // Nov 2, 2026 (Joe, 6:41 PM): Slate > Public (and Private once unlocked), Position Ratings > the position tabs; the main tab
+    // Position Ratings opens the position tab last shown
+    $('tab-pos').setAttribute('aria-current', v === 'rk' ? 'page' : 'false');
+    $('tab-pub').setAttribute('aria-current', v === 'slate' ? 'page' : 'false');
+    $('sub-slate').hidden = v !== 'slate'; $('sub-rk').hidden = v !== 'rk';
+    if (v === 'rk') $('tab-pos').dataset.view = SR.g;
+    document.querySelectorAll('.tab[aria-current="page"]').forEach((cur) => { if (cur.scrollIntoView) cur.scrollIntoView({ inline: 'nearest', block: 'nearest' }); });
     cue();
     if (v === 'slate') { alignStrip(); fitFilters(); }   // audit 17 card M5: a render while another tab was open could not measure the cards
     restick(); resnap();   // Oct 30, 2026 (Joe, 12:23 PM): the snap stops follow the new rows
@@ -1113,8 +1138,77 @@ html.snap-rows { scroll-snap-type: y proximity; }
   function cue() { TB.classList.toggle('more', TB.scrollWidth > TB.clientWidth + 2 && TB.scrollLeft + TB.clientWidth < TB.scrollWidth - 2); }
   TB.addEventListener('scroll', cue);
   window.addEventListener('resize', cue);
-  // Nov 1, 2026 (Joe, 12:59 PM / 1:20 PM): the Alternate Slate tab (right of Matchup) is a plain link to the password page (alternate/), not a view
-  document.querySelector('.tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (!b || b.tagName === 'A') return; e.preventDefault(); show(b.dataset.view); });
+  // Nov 1, 2026 (Joe, 12:59 PM / 1:20 PM): the alternate slate's tab is a plain link to the password page (alternate/), not a view; since
+  // Nov 2 (Joe, 6:41 PM) it is Slate > Private, shown only once unlocked (below)
+  $('tabnav').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (!b || b.tagName === 'A') return; e.preventDefault(); show(b.dataset.view); });
+
+  // ---- the hidden Private tab (Nov 2, 2026; Joe, 6:41 PM: "hide the alternate slate until I click somewhere, like an easter egg? If I
+  // click on CFB, it prompts a password input? ... once I visit the page and enter the password, I dont have to enter it again unless I
+  // leave or close out or timeout"): no visible tab; a click on "CFB" in the title opens a password box.  The password is tested against
+  // the password page itself (alternate/: its salt, rounds and ciphertext, decrypted here and thrown away), and what is kept is the key
+  // derived from it -- never the password -- in this browser tab's sessionStorage (gone when the tab or the browser closes), until 30
+  // minutes pass without a click, key or scroll.  The password page opens straight from it.  The storage name and the 30 minutes are the
+  // password page's too.  On the alternate page itself (no #tab-alt) the title stays plain.
+  const AK = 'ara.alt', AT = 30 * 60 * 1000, ALT = $('tab-alt');
+  const aGet = () => {
+    try { const v = JSON.parse(sessionStorage.getItem(AK) || 'null'); if (v && v.e > Date.now()) return v; if (v) sessionStorage.removeItem(AK); } catch (e) { /* storage off */ }
+    return null;
+  };
+  const aState = () => { if (ALT) ALT.hidden = !aGet(); };
+  let aT = 0;
+  const aTouch = () => {
+    const now = Date.now(); if (now - aT < 15000) return; aT = now;
+    const v = aGet(); if (v) { v.e = now + AT; try { sessionStorage.setItem(AK, JSON.stringify(v)); } catch (e) { /* storage off */ } }
+    aState();
+  };
+  ['pointerdown', 'keydown', 'scroll'].forEach((t) => window.addEventListener(t, aTouch, { passive: true }));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { aT = 0; aTouch(); } });
+  setInterval(aState, 60000);
+  aState();
+  if (ALT && /^CFB\b/.test($('title').textContent)) {
+    const hx = (s) => new Uint8Array(s.match(/../g).map((x) => parseInt(x, 16)));
+    const xh = (b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
+    const unlock = async (pw) => {
+      let P;
+      try {
+        const r = await fetch(ALT.href, { cache: 'no-store' });
+        const m = r.ok && (await r.text()).match(/const D = (\{[^;]*\});/);
+        P = m && JSON.parse(m[1]);
+      } catch (e) { P = null; }
+      if (!P || !P.salt || !P.ct) throw new Error('unreachable');
+      const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: hx(P.salt), iterations: P.iter, hash: 'SHA-256' }, base, 256);
+      const key = await crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['decrypt']);
+      await crypto.subtle.decrypt({ name: 'AES-GCM', iv: hx(P.iv) }, key, hx(P.ct));   // a wrong password fails here
+      return { k: xh(bits), s: P.salt, e: Date.now() + AT };
+    };
+    const t = $('title').textContent;
+    $('title').innerHTML = '<span id="egg">CFB</span>' + esc(t.slice(3));
+    let F = null;
+    const close = () => { if (F) { F.remove(); F = null; } };
+    $('egg').addEventListener('click', () => {
+      if (aGet()) { location.href = ALT.href; return; }
+      if (F) { close(); return; }
+      F = document.createElement('div');
+      F.innerHTML = '<form class="egg-f"><input type="password" autocomplete="current-password" aria-label="Password" placeholder="Password">' +
+        '<button type="submit">Open</button></form><p class="egg-m" role="status"></p>';
+      $('title').after(F);
+      const I = F.querySelector('input'), M = F.querySelector('.egg-m');
+      I.focus();
+      I.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+      F.querySelector('form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!window.crypto || !crypto.subtle) { M.textContent = 'This browser cannot open it.'; return; }
+        M.textContent = 'Checking…';
+        let v;
+        try { v = await unlock(I.value); } catch (err) { M.textContent = err && err.message === 'unreachable' ? 'Could not reach it; try again.' : 'Wrong password.'; I.select(); return; }
+        try { sessionStorage.setItem(AK, JSON.stringify(v)); } catch (err) { /* storage off: the password page asks again */ }
+        M.textContent = 'Opening…';
+        aState();
+        location.href = ALT.href;
+      });
+    });
+  }
   window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h !== VIEW) { VIEW = h; route(); } });
   renderSlate(); route();
 })();
