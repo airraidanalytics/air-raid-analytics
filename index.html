@@ -233,6 +233,7 @@ table.slate { border-collapse: collapse; width: 100%; font-size: 14px; }
 .rh { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 20px; margin-bottom: 12px; }
 .rh h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; margin: 0; line-height: 1.05; }
 .rh p { color: var(--muted); font-size: 13.5px; margin: 4px 0 0; max-width: 80ch; }
+#ta-host { display: block; } .ta-msg { color: var(--muted); font-size: 14px; margin: 8px 0; }
 .rbox { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow-x: auto; max-width: 760px; }
 table.rtg { border-collapse: collapse; width: 100%; font-size: 14px; }
 .rtg th, .rtg td { padding: 5px 9px; white-space: nowrap; }
@@ -408,7 +409,7 @@ html.snap-rows { scroll-snap-type: y proximity; }
       <button class="tab" type="button" data-view="qb" id="tab-pos" hidden>Position Ratings</button>
       <button class="tab" type="button" data-view="ratings" id="tab-ratings">Power Ratings</button>
       <button class="tab" type="button" data-view="mx" id="tab-mx" hidden>Matchup Lab</button>
-      <a class="tab" href="team/" id="tab-team" hidden>Team Analyzer</a>
+      <button class="tab" type="button" data-view="team" id="tab-team" hidden>Team Analyzer</button>
     </div>
     <div class="tabs sub" id="sub-slate" hidden>
       <button class="tab" type="button" data-view="slate" id="tab-pub">Version 1</button>
@@ -464,6 +465,11 @@ html.snap-rows { scroll-snap-type: y proximity; }
       <div class="mx-edges" id="mx-edges"></div>
       <p class="mx-foot" id="mx-foot"></p>
     </div>
+  </section>
+  <section id="view-team" hidden>
+    <div class="rh"><div><h2>Team Analyzer</h2><p id="ta-sub"></p></div></div>
+    <p class="ta-msg" id="ta-msg" role="status" hidden></p>
+    <div id="ta-host"></div>
   </section>
   <section class="notes" aria-label="Notes and sources">
     <div><h2>Reading the card</h2><ul id="notes"></ul></div>
@@ -1156,7 +1162,8 @@ html.snap-rows { scroll-snap-type: y proximity; }
   }
   function route() {
     const h = VIEW;
-    const v = h === 'ratings' && R ? 'ratings' : RKO.includes(h) ? 'rk' : renderMx && (h === 'mx' || h.startsWith('mx/')) ? 'mx' : 'slate';
+    const TT = document.getElementById('tab-team');   // Nov 4, 2026: the Team Analyzer view, only once unlocked (below)
+    const v = TT && !TT.hidden && (h === 'team' || h.startsWith('team=')) ? 'team' : h === 'ratings' && R ? 'ratings' : RKO.includes(h) ? 'rk' : renderMx && (h === 'mx' || h.startsWith('mx/')) ? 'mx' : 'slate';
     if (v === 'rk' && SR.g !== h) { SR.g = h; }
     if (v === 'mx') { mxRead(h); renderMx(); }
     setConf(FILT.conf);                                            // both selects show the shared choice
@@ -1166,6 +1173,8 @@ html.snap-rows { scroll-snap-type: y proximity; }
     $('view-rk').hidden = v !== 'rk'; $('f-rk').hidden = v !== 'rk';
     $('view-ratings').hidden = v !== 'ratings'; $('f-ratings').hidden = v !== 'ratings';
     $('view-mx').hidden = v !== 'mx';
+    $('view-team').hidden = v !== 'team'; if (TT) TT.setAttribute('aria-current', v === 'team' ? 'page' : 'false');
+    if (v === 'team') taMount();
     $('tab-mx').setAttribute('aria-current', v === 'mx' ? 'page' : 'false');
     $('tab-slate').setAttribute('aria-current', v === 'slate' ? 'page' : 'false');
     RKO.forEach((g) => $('tab-' + g).setAttribute('aria-current', v === 'rk' && SR.g === g ? 'page' : 'false'));
@@ -1206,10 +1215,51 @@ html.snap-rows { scroll-snap-type: y proximity; }
     try { const v = JSON.parse(sessionStorage.getItem(AK) || 'null'); if (v && v.e > Date.now()) return v; if (v) sessionStorage.removeItem(AK); } catch (e) { /* storage off */ }
     return null;
   };
-  // Nov 4, 2026 (Joe, 9:02 AM: "Lets wire that to the site in a Team Analyzer tab. Password protected with our typical password logic"): the
-  // Team Analyzer tab (team/: its own password page, the same key) shows with Version 2, once unlocked
-  const TEAMT = $('tab-team');
-  const aState = () => { const on = !!aGet(); if (ALT) { ALT.hidden = !on; slateSub(); } if (TEAMT) TEAMT.hidden = !on; };
+  // Nov 4, 2026 (Joe, 9:02 AM: "Lets wire that to the site in a Team Analyzer tab. Password protected with our typical password logic";
+  // 11:30 AM: "Lets not pop the team analyzer out into a separate full page. Keep it underneath the tab structure like the rest of them"):
+  // the Team Analyzer is a view of this page, shown with Version 2 once unlocked.  Its content is not on this page: team/ holds it encrypted
+  // with the same key, and the tab decrypts it with the kept key (never the password) into a shadow root under the tab bar, so its styles
+  // and this page's stay apart.  When the key lapses the view is emptied and the tab hidden again.
+  const TEAMT = $('tab-team'), TASRC = 'team/';
+  var taOn = false, taBusy = null;
+  function taHex(s) { const n = s.length >> 1, u = new Uint8Array(n); for (let i = 0; i < n; i++) u[i] = parseInt(s.substr(2 * i, 2), 16); return u; }
+  function taUnmount() {
+    if (!taOn && !taBusy) return;
+    taOn = false; const h = $('ta-host'), n = document.createElement('div'); n.id = 'ta-host'; h.replaceWith(n);
+    $('ta-sub').textContent = ''; try { delete window.__ta; delete window.__TA_ROOT; } catch (e) { /* old browser */ }
+  }
+  function taMount() {
+    if (taOn) { if (window.__ta && window.__ta.setHash) window.__ta.setHash(); return; }
+    if (taBusy) return;
+    const v = aGet(), M = $('ta-msg');
+    if (!v) return;
+    M.hidden = false; M.textContent = 'Opening the Team Analyzer…';
+    taBusy = (async () => {
+      const r = await fetch(fresh(TASRC), { cache: 'no-store' });
+      const m = r.ok && (await r.text()).match(/const D = (\{[^;]*\});/);
+      const P = m && JSON.parse(m[1]);
+      if (!P || !P.ct) throw new Error('unreachable');
+      if (P.salt !== v.s) throw new Error('key');
+      const key = await crypto.subtle.importKey('raw', taHex(v.k), 'AES-GCM', false, ['decrypt']);
+      const buf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: taHex(P.iv) }, key, taHex(P.ct));
+      const html = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      if (!aGet()) throw new Error('key');
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const host = $('ta-host'), root = host.shadowRoot || host.attachShadow({ mode: 'open' });
+      root.innerHTML = doc.getElementById('ta-body').innerHTML;
+      const d = document.createElement('script'); d.type = 'application/json'; d.id = 'ta-data'; d.textContent = doc.getElementById('ta-data').textContent; root.appendChild(d);
+      window.__TA_ROOT = root;
+      const sc = document.createElement('script'); sc.textContent = doc.getElementById('ta-js').textContent; document.body.appendChild(sc); sc.remove();
+      taOn = true;
+    })();
+    taBusy.then(() => { M.hidden = true; if (VIEW !== 'team' && !VIEW.startsWith('team=')) return; if (window.__ta && window.__ta.setHash) window.__ta.setHash(); },
+      (e) => { M.textContent = e && e.message === 'unreachable' ? 'Could not reach the Team Analyzer; try again.' : 'The Team Analyzer needs the password again: click CFB in the title.'; })
+      .finally(() => { taBusy = null; });
+  }
+  const aState = () => {
+    const on = !!aGet(); if (ALT) { ALT.hidden = !on; slateSub(); }
+    if (TEAMT) { TEAMT.hidden = !on; if (!on) { taUnmount(); if (CURV === 'team') show('slate'); } }
+  };
   let aT = 0;
   const aTouch = () => {
     const now = Date.now(); if (now - aT < 15000) return; aT = now;
