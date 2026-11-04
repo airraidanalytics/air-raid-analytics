@@ -408,6 +408,7 @@ html.snap-rows { scroll-snap-type: y proximity; }
       <button class="tab" type="button" data-view="qb" id="tab-pos" hidden>Position Ratings</button>
       <button class="tab" type="button" data-view="ratings" id="tab-ratings">Power Ratings</button>
       <button class="tab" type="button" data-view="mx" id="tab-mx" hidden>Matchup Lab</button>
+      <a class="tab" href="team/" id="tab-team" hidden>Team Analyzer</a>
     </div>
     <div class="tabs sub" id="sub-slate" hidden>
       <button class="tab" type="button" data-view="slate" id="tab-pub">Version 1</button>
@@ -1205,7 +1206,10 @@ html.snap-rows { scroll-snap-type: y proximity; }
     try { const v = JSON.parse(sessionStorage.getItem(AK) || 'null'); if (v && v.e > Date.now()) return v; if (v) sessionStorage.removeItem(AK); } catch (e) { /* storage off */ }
     return null;
   };
-  const aState = () => { if (ALT) { ALT.hidden = !aGet(); slateSub(); } };
+  // Nov 4, 2026 (Joe, 9:02 AM: "Lets wire that to the site in a Team Analyzer tab. Password protected with our typical password logic"): the
+  // Team Analyzer tab (team/: its own password page, the same key) shows with Version 2, once unlocked
+  const TEAMT = $('tab-team');
+  const aState = () => { const on = !!aGet(); if (ALT) { ALT.hidden = !on; slateSub(); } if (TEAMT) TEAMT.hidden = !on; };
   let aT = 0;
   const aTouch = () => {
     const now = Date.now(); if (now - aT < 15000) return; aT = now;
