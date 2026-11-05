@@ -42,12 +42,12 @@ def kickoff(row, season):
     return datetime(yr, mo, int(m.group(2)), 23, 59, tzinfo=ET)
 
 
-def played(row, now, season, hours=4.5):
+def played(row, now, season, hours=4.0):   # Nov 5, 2026 (site audit L9): the CLI's and the page's 4 hours (was 4.5)
     t = kickoff(row, season)
     return t is not None and t + timedelta(hours=hours) <= now
 
 
-def clear_rows(D, now=None, hours=4.5):
+def clear_rows(D, now=None, hours=4.0):
     """drop the played games from D['rows'] in place; returns the removed rows"""
     now = now or datetime.now(timezone.utc)
     rows = D.get('rows') or []
