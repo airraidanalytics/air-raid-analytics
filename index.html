@@ -428,6 +428,7 @@ html.snap-rows { scroll-snap-type: y proximity; }
       <button class="tab" type="button" data-view="nil/teams" id="tab-nil-teams">Teams</button>
       <button class="tab" type="button" data-view="nil/under" id="tab-nil-under">Most undervalued</button>
       <button class="tab" type="button" data-view="nil/xfer" id="tab-nil-xfer">Transfer bargains</button>
+      <button class="tab" type="button" data-view="nil/build" id="tab-nil-build">Target Builder</button>
       <button class="tab" type="button" data-view="nil/method" id="tab-nil-method">Method</button>
     </div>
     </div>
@@ -1203,11 +1204,11 @@ html.snap-rows { scroll-snap-type: y proximity; }
     $('view-coach').hidden = v !== 'coach'; $('view-nil').hidden = v !== 'nil';
     if (document.getElementById('tab-coach')) {
       const cs = v === 'coach' ? (['hc', 'oc', 'dc'].includes(h.split('/')[1]) ? h.split('/')[1] : 'hc') : null;
-      const ns = v === 'nil' ? (['players', 'teams', 'under', 'xfer', 'method'].includes(h.split('/')[1]) ? h.split('/')[1] : 'players') : null;
+      const ns = v === 'nil' ? (['players', 'teams', 'under', 'xfer', 'build', 'method'].includes(h.split('/')[1]) ? h.split('/')[1] : 'players') : null;
       $('tab-coach').setAttribute('aria-current', v === 'coach' ? 'page' : 'false'); $('tab-nil').setAttribute('aria-current', v === 'nil' ? 'page' : 'false');
       $('sub-coach').hidden = v !== 'coach'; $('sub-nil').hidden = v !== 'nil';
       ['hc', 'oc', 'dc'].forEach((k) => $('tab-coach-' + k).setAttribute('aria-current', cs === k ? 'page' : 'false'));
-      ['players', 'teams', 'under', 'xfer', 'method'].forEach((k) => $('tab-nil-' + k).setAttribute('aria-current', ns === k ? 'page' : 'false'));
+      ['players', 'teams', 'under', 'xfer', 'build', 'method'].forEach((k) => $('tab-nil-' + k).setAttribute('aria-current', ns === k ? 'page' : 'false'));
       if (cs) { $('tab-coach').dataset.view = 'coach/' + cs; pvMount('coach', cs); }
       if (ns) { $('tab-nil').dataset.view = 'nil/' + ns; pvMount('nil', ns); }
     }
