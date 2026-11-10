@@ -1623,6 +1623,7 @@ pvOn[k]=true})()
 pvBusy[k]=job
 job.then((()=>{M.hidden=true
 pvApply(k,sec)}),(e=>{M.textContent=e&&e.message==="unreachable"?"Could not reach "+c.label+"; try again.":c.label+" needs the password again."})).finally((()=>{pvBusy[k]=null}))}let PWON=false
+const PRIV_HOME="nil/build"
 const aState=()=>{const on=!!aGet()
 const pf=$("pwf")
 if(pf)pf.hidden=!PWON||on
@@ -1663,7 +1664,7 @@ I2.select()
 return}try{sessionStorage.setItem(AK,JSON.stringify(v))}catch(err){}I2.value=""
 M2.textContent=""
 aState()
-show("team")}))
+show(PRIV_HOME)}))
 PWON=true
 aState()}const t=$("title").textContent
 $("title").innerHTML='<span id="egg">CFB</span>'+esc(t.slice(3))
@@ -1671,7 +1672,7 @@ let F=null
 const close=()=>{if(F){F.remove()
 F=null}}
 $("egg").addEventListener("click",(()=>{if(aGet()){close()
-show("team")
+show(PRIV_HOME)
 return}if(F){close()
 return}F=document.createElement("div")
 F.innerHTML='<form class="egg-f"><input type="password" autocomplete="current-password" aria-label="Password" placeholder="Password">'+'<button type="submit">Open</button></form><p class="egg-m" role="status"></p>'
@@ -1687,7 +1688,7 @@ try{v=await unlock(I.value)}catch(err){M.textContent=err&&err.message==="unreach
 I.select()
 return}try{sessionStorage.setItem(AK,JSON.stringify(v))}catch(err){}aState()
 close()
-show("team")}))}))}window.addEventListener("hashchange",(()=>{const h=location.hash.slice(1)
+show(PRIV_HOME)}))}))}window.addEventListener("hashchange",(()=>{const h=location.hash.slice(1)
 if(h!==VIEW){VIEW=h
 route()}}))
 renderSlate()
