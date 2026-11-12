@@ -1636,7 +1636,7 @@ const PRIV_HOME="nil/build"
 const aState=()=>{const on=!!aGet()
 const pf=$("pwf")
 if(pf)pf.hidden=!PWON||on
-if(TEAMT){["team","coach","nil"].forEach((k=>{const t=$("tab-"+k)
+if(TEAMT){["team","nil"].forEach((k=>{const t=$("tab-"+k)
 if(t)t.hidden=!on
 if(!on)pvUnmount(k)}))
 if(!on&&["team","coach","nil"].includes(CURV))show("slate")}}
