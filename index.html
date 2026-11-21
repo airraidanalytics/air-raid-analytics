@@ -520,6 +520,7 @@ th.srt:focus-visible, tr[tabindex]:focus-visible, .dec td[tabindex]:focus-visibl
       <button class="tab" type="button" data-view="coach/hc" id="tab-coach-hc">Head Coach</button>
       <button class="tab" type="button" data-view="coach/oc" id="tab-coach-oc">Offensive Coordinator</button>
       <button class="tab" type="button" data-view="coach/dc" id="tab-coach-dc">Defensive Coordinator</button>
+      <button class="tab" type="button" data-view="coach/ol" id="tab-coach-ol">Offensive Line</button>
     </div>
     <div class="tabs sub" id="sub-nil" hidden>
       <button class="tab" type="button" data-view="nil/players" id="tab-nil-players">Players</button>
@@ -1542,12 +1543,12 @@ $("view-team").hidden=v!=="team"
 if(TT)TT.setAttribute("aria-current",v==="team"?"page":"false")
 $("view-coach").hidden=v!=="coach"
 $("view-nil").hidden=v!=="nil"
-if(document.getElementById("tab-coach")){const cs=v==="coach"?["hc","oc","dc"].includes(h.split("/")[1])?h.split("/")[1]:"hc":null
+if(document.getElementById("tab-coach")){const cs=v==="coach"?["hc","oc","dc","ol"].includes(h.split("/")[1])?h.split("/")[1]:"hc":null
 const ns=v==="nil"?["players","teams","under","xfer","build","method"].includes(h.split("/")[1])?h.split("/")[1]:"players":null
 $("tab-coach").setAttribute("aria-current",v==="coach"?"page":"false")
 $("tab-nil").setAttribute("aria-current",v==="nil"?"page":"false")
 $("sub-coach").hidden=v!=="coach"
-$("sub-nil").hidden=v!=="nil";["hc","oc","dc"].forEach((k=>$("tab-coach-"+k).setAttribute("aria-current",cs===k?"page":"false")));["players","teams","under","xfer","build","method"].forEach((k=>$("tab-nil-"+k).setAttribute("aria-current",ns===k?"page":"false")))
+$("sub-nil").hidden=v!=="nil";["hc","oc","dc","ol"].forEach((k=>$("tab-coach-"+k).setAttribute("aria-current",cs===k?"page":"false")));["players","teams","under","xfer","build","method"].forEach((k=>$("tab-nil-"+k).setAttribute("aria-current",ns===k?"page":"false")))
 if(cs){$("tab-coach").dataset.view="coach/"+cs
 pvMount("coach",cs)}if(ns){$("tab-nil").dataset.view="nil/"+ns
 pvMount("nil",ns)}}if(v==="team")pvMount("team")
